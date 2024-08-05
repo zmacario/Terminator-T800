@@ -1,0 +1,60 @@
+services:
+  depth_detect_vision:
+      build:
+        ./depth_detect_api
+      runtime:
+        nvidia
+      #command:
+      #  nvidia-smi
+      deploy:
+        resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                count: 1
+                capabilities: [gpu]
+      networks:
+        - skynet
+      ports:
+        - 8001:8001
+
+  face_detect_api:
+    build:
+     ./face_detect_api
+    runtime:
+        nvidia
+    #command:
+    #  nvidia-smi
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - skynet
+    ports:
+      - 8002:8002
+
+  object_detect_api:
+    build:
+     ./object_detect_api
+    runtime:
+        nvidia
+    #command:
+    #  nvidia-smi
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - skynet
+    ports:
+      - 8003:8003
+
+networks:
+  skynet:

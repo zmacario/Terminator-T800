@@ -1,0 +1,7 @@
+typing==3.7.4.3
+pydantic==2.8.2
+uvicorn==0.30.3
+fastapi==0.111.1
+opencv-python==4.10.0.84
+./jetson_libs/torch-2.3.0-cp310-cp310-linux_aarch64.whl
+./jetson_libs/torchvision-0.18.0a0+6043bc2-cp310-cp310-linux_aarch64.whl
