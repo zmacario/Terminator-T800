@@ -60,20 +60,21 @@ def draw_face(params: Params = None):
     try:
         if not params is None:
 
-            rgb_frame = base64.b64decode(params.rgb_image)
-            rgb_frame = np.frombuffer(rgb_frame, np.uint8)
-            rgb_frame = cv2.imdecode(rgb_frame, cv2.IMREAD_COLOR)
-
-            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
+            mp_image = base64.b64decode(params.rgb_image)
+            mp_image = np.frombuffer(mp_image, np.uint8)
+            mp_image = cv2.imdecode(mp_image, cv2.IMREAD_COLOR)
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=mp_image)
             with FaceLandmarker.create_from_options(options) as landmarker:
                     
                     face_landmarker_result = landmarker.detect_for_video(mp_image, params.frame_timestamp_ms)
-                    face_frame = draw_landmarks_on_frame(mp_image.numpy_view(), face_landmarker_result)
-                    if not face_frame is None:
-                        _, face_frame = cv2.imencode('.jpg', face_frame)
-                        face_frame = base64.b64encode(face_frame).decode('utf-8')
+                    if not face_landmarker_result is None:
+                        
+                        face_frame = draw_landmarks_on_frame(mp_image.numpy_view(), face_landmarker_result)
+                        ret, face_frame = cv2.imencode('.jpg', face_frame)
+                        if ret is True:
 
-        return {'result_frame': face_frame}
+                            face_frame = base64.b64encode(face_frame).decode('utf-8')
+                            return {'result_frame': face_frame}
     
     except Exception as e:
         print(e, flush=True)

@@ -34,18 +34,20 @@ def detect_depth(params: Params = None):
     try:
         if not params is None:
 
-            rgb_frame = base64.b64decode(params.rgb_image)
-            rgb_frame = np.frombuffer(rgb_frame, np.uint8)
-            rgb_frame = cv2.imdecode(rgb_frame, cv2.IMREAD_COLOR)
-            
-            depth_frame = model.infer_image(rgb_frame)
-            depth_frame = (depth_frame - depth_frame.min()) / (depth_frame.max() - depth_frame.min()) * 255.0
-            depth_frame = depth_frame.astype(np.uint8)
-            depth_frame = np.repeat(depth_frame[..., np.newaxis], 3, axis=-1)
-            _, depth_frame = cv2.imencode('.jpg', depth_frame)
-            depth_frame = base64.b64encode(depth_frame).decode('utf-8')
+            depth_frame = base64.b64decode(params.rgb_image)
+            depth_frame = np.frombuffer(depth_frame, np.uint8)
+            depth_frame = cv2.imdecode(depth_frame, cv2.IMREAD_COLOR)
+            depth_frame = model.infer_image(depth_frame)
+            if not depth_frame is None:
 
-        return {'result_frame': depth_frame}
+                depth_frame = (depth_frame - depth_frame.min()) / (depth_frame.max() - depth_frame.min()) * 255.0
+                depth_frame = depth_frame.astype(np.uint8)
+                depth_frame = np.repeat(depth_frame[..., np.newaxis], 3, axis=-1)
+                ret, depth_frame = cv2.imencode('.jpg', depth_frame)
+                if ret is True and not depth_frame is None:
+
+                    depth_frame = base64.b64encode(depth_frame).decode('utf-8')
+                    return {'result_frame': depth_frame}
     
     except Exception as e:
         print(e, flush=True)
