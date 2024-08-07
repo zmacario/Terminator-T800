@@ -2,6 +2,7 @@ import cv2
 import base64
 import requests
 import numpy as np
+import utils as utl
 from datetime import datetime
 from multiprocessing import Process, Lock, Queue
 
@@ -61,12 +62,13 @@ def red_shift(image: np.ndarray, shift_factor: float=0.5):
 
     return image    
 
-def apply_noise(image: np.ndarray, noise_factor: float=0.3):
+def apply_noise(image: np.ndarray, noise_factor: float=0.25):
 
     try:
         output_image = image.copy()
         noise_factor = np.clip(noise_factor, 0, 1)
-        noise = np.random.randint(0, 256, output_image.shape, dtype='uint8')
+        noise = np.random.randint(0, 256, (output_image.shape[0], output_image.shape[1]), dtype = np.uint8)
+        noise = np.repeat(noise[:, :, np.newaxis], 3, axis=2)
         output_image = cv2.addWeighted(output_image, 1 - noise_factor, noise, noise_factor, 0)
         return output_image
 
@@ -91,21 +93,18 @@ def apply_horizontal_grid(image: np.ndarray, line_spacing: int=6, line_color: li
 
     return image
 
-def detect_face(jpg_str: str, gpu, bgr_image_queue):
+def detect_face(jpg_str: str, shape, gpu, bgr_image_queue):
 
     try:
         if gpu.acquire(block=False) and not bgr_image_queue is None:
 
-            image = call_img_func(url=face_detect_url, json={'rgb_image': jpg_str})
+            results = call_img_func(url=face_detect_url, json={'rgb_image': jpg_str})
             gpu.release()
-            if not image is None:
+            if not results is None:
 
-                image = base64.b64decode(image['result_frame'])
-                image = np.frombuffer(image, np.uint8)
-                image = cv2.imdecode(image, cv2.IMREAD_COLOR)
-                if not bgr_image_queue is None:
-
-                    bgr_image_queue.put({'title': 'Face mapping', 'frame': image}, timeout=0.05)
+                image = np.zeros(shape=shape, dtype=np.uint8)
+                image = utl.draw_landmarks(image, results['face_landmarks'])
+                bgr_image_queue.put({'title': 'Face mapping', 'frame': image}, timeout=0.05)
                         
     except Exception as e:
         print(e, flush=True)
@@ -122,9 +121,7 @@ def detect_depth(jpg_str: str, gpu, bgr_image_queue):
                 image = base64.b64decode(image['result_frame'])
                 image = np.frombuffer(image, np.uint8)
                 image = cv2.imdecode(image, cv2.IMREAD_COLOR)
-                if not bgr_image_queue is None:
-
-                    bgr_image_queue.put({'title': 'Depth mapping', 'frame': image}, timeout=0.05)
+                bgr_image_queue.put({'title': 'Depth mapping', 'frame': image}, timeout=0.05)
             
     except Exception as e:
         print(e, flush=True)
@@ -174,9 +171,10 @@ def show_main_vision(main_image_queue, window_shape: tuple=(1280, 960)):
             object_frame = None
 
             frame_count = 0
-            red_flag = False
+            red_flag = True
             text_color = (0, 255, 255)
             red_text_color = (255, 255, 255)
+            noise_factor = 0.0
 
             labels = [{'text': 'T-800 VISION', 'org': (30, 30), 'fontFace': cv2.FONT_HERSHEY_PLAIN, 'fontScale': 1.5, 'thickness': 2, 'lineType': cv2.LINE_AA},
                       {'text': '_FACE MAPPING', 'org': (880, 30), 'fontFace': cv2.FONT_HERSHEY_PLAIN, 'fontScale': 1.5, 'thickness': 2, 'lineType': cv2.LINE_AA},
@@ -193,7 +191,7 @@ def show_main_vision(main_image_queue, window_shape: tuple=(1280, 960)):
 
                         now = datetime.now()
                         frame_count = frame_count + 1
-                        if frame_count % 90 == 0:
+                        if frame_count % 120 == 0:
                             if red_flag is True:
                                 red_flag = False
                             else:
@@ -201,9 +199,12 @@ def show_main_vision(main_image_queue, window_shape: tuple=(1280, 960)):
 
                         if image['title'] == 'Main':
 
-                            bkg_frame = cv2.resize(image['frame'], window_shape, interpolation = cv2.INTER_LINEAR)
-                            red_bkg_frame = red_shift(image=bkg_frame, shift_factor=1.0)
-                            red_bkg_frame = apply_horizontal_grid(red_bkg_frame, line_spacing=8, line_thickness=2)
+                            bkg_frame = apply_noise(image['frame'], noise_factor)
+                            bkg_frame = cv2.resize(bkg_frame, window_shape, interpolation = cv2.INTER_LINEAR)
+
+                            red_bkg_frame = red_shift(image=image['frame'], shift_factor=1.0)
+                            red_bkg_frame = apply_horizontal_grid(red_bkg_frame, line_spacing=5, line_thickness=1)
+                            red_bkg_frame = cv2.resize(red_bkg_frame, window_shape, interpolation = cv2.INTER_LINEAR)
                         
                         elif image['title'] == 'Object mapping':
 
@@ -217,10 +218,13 @@ def show_main_vision(main_image_queue, window_shape: tuple=(1280, 960)):
                             object_width = object_frame.shape[1]
                             object_legend = image['legend']
                             
-
                         elif image['title'] == 'Face mapping':
 
-                            face_height = int(window_shape[1] * 0.33)
+                            face_frame = image['frame']
+                            face_height = face_frame.shape[0]
+                            face_width = face_frame.shape[1]
+                                         
+                            face_height = int(window_shape[1] * 0.25)
                             face_width = int(image['frame'].shape[1] * (face_height / image['frame'].shape[0]))
                             face_frame = cv2.resize(image['frame'], (face_width, face_height), interpolation=cv2.INTER_AREA)
                             red_face_frame = cv2.applyColorMap(face_frame, cv2.COLORMAP_HOT)
@@ -235,6 +239,8 @@ def show_main_vision(main_image_queue, window_shape: tuple=(1280, 960)):
                             
                     if not bkg_frame is None: 
                         if red_flag is True:
+                            noise_factor = 0.0
+
                             if not object_frame is None:
                                 red_bkg_frame[window_shape[1] - object_height:window_shape[1], 0:object_width][object_frame == 1] = red_text_color
 
@@ -250,8 +256,8 @@ def show_main_vision(main_image_queue, window_shape: tuple=(1280, 960)):
                                 red_bkg_frame[window_shape[1] - depth_height:window_shape[1], window_shape[0] - depth_width:window_shape[0]] = red_depth_frame
 
                             if not face_frame is None:
-                                red_bkg_frame[0: face_height, window_shape[0] - face_width:window_shape[0]] = red_face_frame
-                            
+                                red_bkg_frame[0: face_height, window_shape[0] - face_width:window_shape[0]] = red_bkg_frame[0: face_height, window_shape[0] - face_width:window_shape[0]] + red_face_frame
+                        
                             red_bkg_frame = cv2.putText(img=red_bkg_frame, text=str(frame_count), org=(30, 60), fontFace=labels[0]['fontFace'], fontScale=labels[0]['fontScale'], color=red_text_color, thickness=labels[0]['thickness'], lineType=labels[0]['lineType'])
                             red_bkg_frame = cv2.putText(img=red_bkg_frame, text=now.strftime("%c"), org=(500, 30), fontFace=labels[0]['fontFace'], fontScale=labels[0]['fontScale'], color=red_text_color, thickness=labels[0]['thickness'], lineType=labels[0]['lineType'])
                             for label in labels:
@@ -260,6 +266,8 @@ def show_main_vision(main_image_queue, window_shape: tuple=(1280, 960)):
                             window_image_queue.put({'title':'Main', 'frame':red_bkg_frame}, timeout=0.05)
 
                         else:
+                            noise_factor = noise_factor + 1/240
+
                             if not object_frame is None:
                                 bkg_frame[window_shape[1] - object_height:window_shape[1], 0:object_width][object_frame == 1] = text_color
 
@@ -275,7 +283,7 @@ def show_main_vision(main_image_queue, window_shape: tuple=(1280, 960)):
                                 bkg_frame[window_shape[1] - depth_height:window_shape[1], window_shape[0] - depth_width:window_shape[0]] = depth_frame
 
                             if not face_frame is None:
-                                bkg_frame[0: face_height, window_shape[0] - face_width:window_shape[0]] = face_frame
+                                bkg_frame[0: face_height, window_shape[0] - face_width:window_shape[0]] = bkg_frame[0: face_height, window_shape[0] - face_width:window_shape[0]] + face_frame
 
                             bkg_frame = cv2.putText(img=bkg_frame, text=str(frame_count), org=(30, 60), fontFace=labels[0]['fontFace'], fontScale=labels[0]['fontScale'], color=text_color, thickness=labels[0]['thickness'], lineType=labels[0]['lineType'])
                             bkg_frame = cv2.putText(img=bkg_frame, text=now.strftime("%c"), org=(500, 30), fontFace=labels[0]['fontFace'], fontScale=labels[0]['fontScale'], color=text_color, thickness=labels[0]['thickness'], lineType=labels[0]['lineType'])
@@ -308,10 +316,11 @@ def main():
                     ret, jpg_frame = cv2.imencode(ext='.jpg', img=cap_frame)
                     if ret:
 
+                        shape = cap_frame.shape
                         jpg_str = base64.b64encode(jpg_frame).decode('utf-8')
                         p3 = Process(target=detect_object, args=(jpg_str, gpu, bgr_image_queue,))
                         p4 = Process(target=detect_depth, args=(jpg_str, gpu, bgr_image_queue,))
-                        p5 = Process(target=detect_face, args=(jpg_str, gpu, bgr_image_queue,))
+                        p5 = Process(target=detect_face, args=(jpg_str, shape, gpu, bgr_image_queue,))
                         p3.start()
                         p4.start()
                         p5.start()

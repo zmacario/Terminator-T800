@@ -1,8 +1,8 @@
+lapx==0.5.9.post1
 typing==3.7.4.3
 pydantic==2.8.2
 uvicorn==0.30.3
 fastapi==0.111.1
-collection==0.1.6
 opencv-python==4.10.0.84
 ultralytics==8.2.68
 ./jetson_libs/torch-2.3.0-cp310-cp310-linux_aarch64.whl
