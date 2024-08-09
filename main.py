@@ -104,7 +104,7 @@ def detect_face(jpg_str: str, shape, gpu, bgr_image_queue):
 
                 image = np.zeros(shape=shape, dtype=np.uint8)
                 image = utl.draw_landmarks(image, results['face_landmarks'])
-                bgr_image_queue.put({'title': 'Face mapping', 'frame': image}, timeout=0.05)
+                bgr_image_queue.put({'title': 'Face mapping', 'frame': image}, timeout=0.1)
                         
     except Exception as e:
         print(e, flush=True)
@@ -171,15 +171,16 @@ def show_main_vision(main_image_queue, window_shape: tuple=(1280, 960)):
             object_frame = None
 
             frame_count = 0
+            interval = 120
             red_flag = True
             text_color = (0, 255, 255)
             red_text_color = (255, 255, 255)
             noise_factor = 0.0
 
-            labels = [{'text': 'T-800 VISION', 'org': (30, 30), 'fontFace': cv2.FONT_HERSHEY_PLAIN, 'fontScale': 1.5, 'thickness': 2, 'lineType': cv2.LINE_AA},
-                      {'text': '_FACE MAPPING', 'org': (880, 30), 'fontFace': cv2.FONT_HERSHEY_PLAIN, 'fontScale': 1.5, 'thickness': 2, 'lineType': cv2.LINE_AA},
-                      {'text': '_INVENTORY', 'org': (20, 680), 'fontFace': cv2.FONT_HERSHEY_PLAIN, 'fontScale': 1.5, 'thickness': 2, 'lineType': cv2.LINE_AA},
-                      {'text': '_DEPTH MAPPING', 'org': (880, 680), 'fontFace': cv2.FONT_HERSHEY_PLAIN, 'fontScale': 1.5, 'thickness': 2, 'lineType': cv2.LINE_AA}]
+            labels = [{'text': 'T-800 VISION', 'org': (30, 30), 'fontFace': cv2.FONT_HERSHEY_PLAIN, 'fontScale': 2.5, 'thickness': 2, 'lineType': cv2.LINE_AA},
+                      {'text': '_FACE MAPPING', 'org': (850, 60), 'fontFace': cv2.FONT_HERSHEY_PLAIN, 'fontScale': 2.5, 'thickness': 2, 'lineType': cv2.LINE_AA},
+                      {'text': '_INVENTORY', 'org': (30, 650), 'fontFace': cv2.FONT_HERSHEY_PLAIN, 'fontScale': 2.5, 'thickness': 2, 'lineType': cv2.LINE_AA},
+                      {'text': '_DEPTH MAPPING', 'org': (850, 650), 'fontFace': cv2.FONT_HERSHEY_PLAIN, 'fontScale': 2.5, 'thickness': 2, 'lineType': cv2.LINE_AA}]
 
             window_image_queue = Queue(1)
             p1 = Process(target=show_window, args=(window_image_queue,))
@@ -191,11 +192,13 @@ def show_main_vision(main_image_queue, window_shape: tuple=(1280, 960)):
 
                         now = datetime.now()
                         frame_count = frame_count + 1
-                        if frame_count % 120 == 0:
+                        if frame_count % interval == 0:
                             if red_flag is True:
                                 red_flag = False
+                                interval = 30
                             else:
                                 red_flag = True
+                                interval = 150
 
                         if image['title'] == 'Main':
 
@@ -242,10 +245,10 @@ def show_main_vision(main_image_queue, window_shape: tuple=(1280, 960)):
                             noise_factor = 0.0
 
                             if not object_frame is None:
-                                red_bkg_frame[window_shape[1] - object_height:window_shape[1], 0:object_width][object_frame == 1] = red_text_color
+                                red_bkg_frame[window_shape[1] - object_height - 30:window_shape[1] - 30, 30:object_width + 30][object_frame == 1] = red_text_color
 
-                                x_pos = 20
-                                y_pos = window_shape[1] - object_height + 20
+                                x_pos = 50
+                                y_pos = window_shape[1] - object_height - 10
                                 delta_x = int(window_shape[0] / len(object_legend))
                                 for legend in object_legend:
 
@@ -253,26 +256,26 @@ def show_main_vision(main_image_queue, window_shape: tuple=(1280, 960)):
                                     x_pos = x_pos + delta_x
 
                             if not depth_frame is None:
-                                red_bkg_frame[window_shape[1] - depth_height:window_shape[1], window_shape[0] - depth_width:window_shape[0]] = red_depth_frame
+                                red_bkg_frame[window_shape[1] - depth_height - 30:window_shape[1] - 30, window_shape[0] - depth_width - 30:window_shape[0] - 30] = red_depth_frame
 
                             if not face_frame is None:
-                                red_bkg_frame[0: face_height, window_shape[0] - face_width:window_shape[0]] = red_bkg_frame[0: face_height, window_shape[0] - face_width:window_shape[0]] + red_face_frame
-                        
-                            red_bkg_frame = cv2.putText(img=red_bkg_frame, text=str(frame_count), org=(30, 60), fontFace=labels[0]['fontFace'], fontScale=labels[0]['fontScale'], color=red_text_color, thickness=labels[0]['thickness'], lineType=labels[0]['lineType'])
-                            red_bkg_frame = cv2.putText(img=red_bkg_frame, text=now.strftime("%c"), org=(500, 30), fontFace=labels[0]['fontFace'], fontScale=labels[0]['fontScale'], color=red_text_color, thickness=labels[0]['thickness'], lineType=labels[0]['lineType'])
+                                red_bkg_frame[60: face_height + 60, window_shape[0] - face_width - 60:window_shape[0] - 60][red_face_frame > 0] = 255
+
+                            red_bkg_frame = cv2.putText(img=red_bkg_frame, text=str(frame_count), org=(30, 90), fontFace=labels[0]['fontFace'], fontScale=labels[0]['fontScale'], color=red_text_color, thickness=labels[0]['thickness'], lineType=labels[0]['lineType'])
+                            red_bkg_frame = cv2.putText(img=red_bkg_frame, text=now.strftime("%c"), org=(30, 60), fontFace=labels[0]['fontFace'], fontScale=labels[0]['fontScale'], color=red_text_color, thickness=labels[0]['thickness'], lineType=labels[0]['lineType'])
                             for label in labels:
                                 red_bkg_frame = cv2.putText(img=red_bkg_frame, text=label['text'], org=label['org'], fontFace=label['fontFace'], fontScale=label['fontScale'], color=red_text_color, thickness=label['thickness'], lineType=label['lineType'])
                                                             
                             window_image_queue.put({'title':'Main', 'frame':red_bkg_frame}, timeout=0.05)
 
                         else:
-                            noise_factor = noise_factor + 1/240
+                            noise_factor = noise_factor + 1/interval
 
                             if not object_frame is None:
-                                bkg_frame[window_shape[1] - object_height:window_shape[1], 0:object_width][object_frame == 1] = text_color
+                                bkg_frame[window_shape[1] - object_height - 30:window_shape[1] - 30, 30:object_width + 30][object_frame == 1] = text_color
 
-                                x_pos = 20
-                                y_pos = window_shape[1] - object_height + 20
+                                x_pos = 50
+                                y_pos = window_shape[1] - object_height - 10
                                 delta_x = int(window_shape[0] / len(object_legend))
                                 for legend in object_legend:
 
@@ -280,13 +283,14 @@ def show_main_vision(main_image_queue, window_shape: tuple=(1280, 960)):
                                     x_pos = x_pos + delta_x
 
                             if not depth_frame is None:
-                                bkg_frame[window_shape[1] - depth_height:window_shape[1], window_shape[0] - depth_width:window_shape[0]] = depth_frame
+                                bkg_frame[window_shape[1] - depth_height - 30:window_shape[1] - 30, window_shape[0] - depth_width - 30:window_shape[0] - 30] = depth_frame
 
                             if not face_frame is None:
-                                bkg_frame[0: face_height, window_shape[0] - face_width:window_shape[0]] = bkg_frame[0: face_height, window_shape[0] - face_width:window_shape[0]] + face_frame
+                                bkg_frame[60: face_height + 60, window_shape[0] - face_width - 60:window_shape[0] - 60, 0][red_face_frame[:, :, 0] > 0] = 0
+                                bkg_frame[60: face_height + 60, window_shape[0] - face_width - 60:window_shape[0] - 60, 1:2][red_face_frame[:, :, 1:2] > 0] = 255
 
-                            bkg_frame = cv2.putText(img=bkg_frame, text=str(frame_count), org=(30, 60), fontFace=labels[0]['fontFace'], fontScale=labels[0]['fontScale'], color=text_color, thickness=labels[0]['thickness'], lineType=labels[0]['lineType'])
-                            bkg_frame = cv2.putText(img=bkg_frame, text=now.strftime("%c"), org=(500, 30), fontFace=labels[0]['fontFace'], fontScale=labels[0]['fontScale'], color=text_color, thickness=labels[0]['thickness'], lineType=labels[0]['lineType'])
+                            bkg_frame = cv2.putText(img=bkg_frame, text=str(frame_count), org=(30, 90), fontFace=labels[0]['fontFace'], fontScale=labels[0]['fontScale'], color=text_color, thickness=labels[0]['thickness'], lineType=labels[0]['lineType'])
+                            bkg_frame = cv2.putText(img=bkg_frame, text=now.strftime("%c"), org=(30, 60), fontFace=labels[0]['fontFace'], fontScale=labels[0]['fontScale'], color=text_color, thickness=labels[0]['thickness'], lineType=labels[0]['lineType'])
                             for label in labels:
                                 bkg_frame = cv2.putText(img=bkg_frame, text=label['text'], org=label['org'], fontFace=label['fontFace'], fontScale=label['fontScale'], color=text_color, thickness=label['thickness'], lineType=label['lineType'])
 
@@ -299,10 +303,15 @@ def show_main_vision(main_image_queue, window_shape: tuple=(1280, 960)):
         print(e, flush=True)
                     
 def main():
-        
-    cap = cv2.VideoCapture(0)
-    if cap.isOpened():
+    
+    cam_id = 0
+    while cam_id < 4:
+        cap = cv2.VideoCapture(cam_id)
+        if cap.isOpened():
+            break
+        cam_id = cam_id + 1
 
+    if cap.isOpened():
         bgr_image_queue = Queue(4)
         p2 = Process(target=show_main_vision, args=(bgr_image_queue,))
         p2.start()        
@@ -312,7 +321,7 @@ def main():
             try:
                 ret, cap_frame = cap.read()
                 if ret:
-        
+            
                     ret, jpg_frame = cv2.imencode(ext='.jpg', img=cap_frame)
                     if ret:
 
@@ -336,6 +345,7 @@ def main():
         p2.terminate()
 
     cap.release()
+
 
 if __name__ == "__main__":
     main()

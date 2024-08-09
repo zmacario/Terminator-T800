@@ -1,3 +1,4 @@
+import os
 import cv2
 import base64
 import numpy as np
@@ -7,11 +8,11 @@ from pydantic import BaseModel
 from ultralytics import YOLO
 
 #model = YOLO("./yolov8/yolov8n-seg.engine", task = "segment")
-model = YOLO("./yolov8/yolov8n-seg.pt", task = "segment")
+model = YOLO("./yolov8/yolov8n-seg.pt") #, task = "segment")
 names = model.model.names
 
-print('===> OpenCV Version.....:', cv2.__version__, flush = True)
-print('===> OpenCV Cuda devices:', cv2.cuda.getCudaEnabledDeviceCount(), flush = True)
+print('===> OpenCV Version.....:', cv2.__version__, flush=True)
+print('===> OpenCV Cuda devices:', cv2.cuda.getCudaEnabledDeviceCount(), flush=True)
 #print('===> Opencv build information:', cv2.getBuildInformation(), flush = True)
 
 app = FastAPI()
@@ -28,7 +29,7 @@ def detect_segment(params: Params = None):
             segment_frame = base64.b64decode(params.rgb_image)
             segment_frame = np.frombuffer(segment_frame, np.uint8)
             segment_frame = cv2.imdecode(segment_frame, cv2.IMREAD_COLOR)
-            results = model.track(segment_frame, persist=True)
+            results = model.track(segment_frame, persist=True, device='0', conf=0.30)
 
             object_class = [results[0].names[obj_class] for obj_class in results[0].boxes.cls.int().cpu().tolist()]
             object_conf = results[0].boxes.conf.float().cpu().tolist()
