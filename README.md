@@ -1,7 +1,3 @@
-Aqui está um exemplo de `README.md` para um projeto de simulação da visão do Exterminador do Futuro:
-
----
-
 # Terminator Vision Simulation
 
 ![Terminator Vision](./assets/terminator_vision_banner.png)
