@@ -84,5 +84,3 @@ This project is licensed under the MIT License. See the `LICENSE` file for more 
 - Special thanks to the open-source community for providing the tools and libraries used in this project.
 
 ---
-
-This `README.md` should give users a comprehensive guide to understanding, installing, and using your simulation project.
