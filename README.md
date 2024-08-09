@@ -1,7 +1,5 @@
 # Terminator Vision Simulation
 
-![Terminator Vision](./assets/terminator_vision_banner.png)
-
 ## Overview
 
 This project simulates the iconic "Terminator Vision" from the classic movie *The Terminator*. The simulation replicates the red-tinted HUD (Heads-Up Display) seen through the eyes of the Terminator, object segmentation and track, and face detection.
@@ -13,10 +11,13 @@ This project simulates the iconic "Terminator Vision" from the classic movie *Th
 - **Depht Estimation**: Classifies objects based on threat level, with different color codes.
 - **Face Detection**: Draws a mesh over the estimated surface of the detected face.
 
+## Important
+
+This project was developed to run on the NVidia Jetson Orin Nano platform!
+
 ## Screenshots
 
 ![HUD Screenshot](./assets/hud_screenshot.png)
-![Threat Detection](./assets/threat_detection.png)
 
 ## Installation
 
