@@ -17,7 +17,8 @@ This project was developed to run on the NVidia Jetson Orin Nano platform!
 
 ## Screenshots
 
-![HUD Screenshot](./assets/hud_screenshot.png)
+![HUD Screenshot](./assets/Main_screenshot_09.08.2024.png)
+![Connection failure simulation](./assets/Main_screenshot_09.08.2024_2.png)
 
 ## Installation
 
