@@ -4,12 +4,12 @@
 
 ## Overview
 
-This project simulates the iconic "Terminator Vision" from the classic movie *The Terminator*. The simulation replicates the red-tinted HUD (Heads-Up Display) seen through the eyes of the Terminator, featuring data analysis, object detection, and threat assessment.
+This project simulates the iconic "Terminator Vision" from the classic movie *The Terminator*. The simulation replicates the red-tinted HUD (Heads-Up Display) seen through the eyes of the Terminator, object segmentation and track, and face detection.
 
 ## Features
 
 - **Red-Tinted HUD**: A distinctive red overlay that mimics the visual style of the Terminator's vision.
-- **Object Segmentation and tracking**: Identifies and highlights objects in real-time.
+- **Object Segmentation and track**: Identifies and highlights objects in real-time.
 - **Depht Estimation**: Classifies objects based on threat level, with different color codes.
 - **Face Detection**: Draws a mesh over the estimated surface of the detected face.
 
@@ -25,7 +25,7 @@ To get started with the simulation, follow these steps:
 1. **Clone the Repository**:
     ```bash
     git clone https://github.com/zmacario/Terminator_T800.git
-    cd terminator-vision-simulation
+    cd Terminator_T800
     ```
 
 2. **Install Dependencies**:
